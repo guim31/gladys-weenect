@@ -1,0 +1,31 @@
+{
+  "items": [
+    {
+      "id": 200001,
+      "number": 200001,
+      "name": "Maison",
+      "address": "Adresse d’exemple",
+      "active": true,
+      "tracker_id": 100001,
+      "latitude": 45.0,
+      "longitude": 4.0,
+      "mode": 3,
+      "distance": 100,
+      "is_outside": false
+    },
+    {
+      "id": 200002,
+      "number": 200002,
+      "name": "Jardin des voisins",
+      "address": "Adresse d’exemple",
+      "active": true,
+      "tracker_id": 100001,
+      "latitude": 45.003,
+      "longitude": 4.0,
+      "mode": 3,
+      "distance": 60,
+      "is_outside": false
+    }
+  ],
+  "total": 2
+}

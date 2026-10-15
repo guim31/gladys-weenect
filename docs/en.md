@@ -1,61 +1,197 @@
-# Demo Devices Template
+# Weenect
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Follow your **Weenect** GPS trackers (cat, dog, child, senior) in Gladys: the
+zone they are in (home, garden, school…), the battery, the last position, and
+make them ring or vibrate from a dashboard or a scene.
 
-## What you get
+> **Developed without the hardware**: this integration was written from the
+> API the Weenect app uses and from the equivalent Home Assistant integration,
+> without a Weenect tracker or account at hand. Feedback is welcome on the
+> Gladys forum or in the GitHub issues.
+>
+> Community integration, **not affiliated with Weenect**.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## Overview
+
+Each tracker of your Weenect account becomes a Gladys device. The integration
+reads the Weenect cloud at a regular interval (every minute by default) and
+publishes:
+
+- **which zone** the tracker is in, from the zones you drew in the Weenect app
+  ("Home", "Garden", "School"…);
+- its **battery level**, and a **low battery** alert at the threshold set in
+  the Weenect app;
+- whether it is **online** or **offline**;
+- its **last position** (coordinates, accuracy, time), unless you choose to
+  keep the zones only.
+
+It also adds two scene triggers (**enters** and **leaves a zone**), a scene
+action to start **super live**, and a dashboard widget.
+
+## Requirements
+
+- Gladys **5.1.0** or later.
+- A Weenect tracker with an **active subscription**, and the account used in
+  the Weenect app (e-mail and password). An account created through Google or
+  Apple may have no password: set one from the Weenect app or website ("forgot
+  password").
+- The **zones** you want to follow, created in the Weenect app.
+- Gladys must reach the Internet (`apiv4.weenect.com`).
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+1. Install the integration from **Integrations → Install from GitHub** (or
+   from the catalog once it is listed).
+2. In the **Configuration** tab, enter the **e-mail** and **password** of your
+   Weenect account.
+3. Choose **what Gladys keeps of the position**:
+   - **Coordinates and zones** (default): the position, its accuracy and a map
+     link;
+   - **Zones only**: Gladys knows whether the tracker is in a zone, never where
+     it is (see "Privacy").
+4. Choose the **refresh interval** (30 seconds to 10 minutes, 1 minute by
+   default) and the **language of the texts** (French by default).
+5. Save, then click **Test the connection**: the button shows the number of
+   trackers found.
+6. Open the **Discover** tab and add your trackers to Gladys. The values arrive
+   at once.
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+The feature names are set when a device is added, in the language chosen at
+that moment.
 
-## Actions
+## Devices
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+One device per tracker, with these features:
 
-## Scenes
+| Feature                   | What it tells                                                           |
+| ------------------------- | ----------------------------------------------------------------------- |
+| Position                  | "45.76400, 4.83570", or "Hidden" in the "Zones only" mode               |
+| Position accuracy         | Uncertainty radius of the last position, in metres                      |
+| Last position             | Date and time of the last position the tracker sent                     |
+| Battery                   | Battery level, in %                                                     |
+| Low battery               | Yes when the battery falls under the alert threshold of the Weenect app |
+| Online                    | Yes when the tracker talks to Weenect                                   |
+| Status                    | Online, offline, or super live (started from Gladys)                    |
+| In a zone                 | Yes when the tracker is in at least one of its zones                    |
+| Current zone              | Name of the zone (the smallest one if several), or "Outside the zones"  |
+| Zone: Home (one per zone) | Yes when the tracker is in that zone                                    |
+| Ring                      | Button: the tracker rings (when the model can)                          |
+| Vibrate                   | Button: the tracker vibrates (when the model can)                       |
+| Ask for a position        | Button: the tracker sends a new position as soon as it can              |
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+A zone added later in the Weenect app shows in the **Discover** tab with an
+**Update** button: one click adds it to the device. A renamed zone keeps its
+feature (Gladys knows it by its id, not by its name).
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+## Widget
 
-## Dashboard
+The **Weenect trackers** widget is added from the dashboard editor.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+- **Without a setting**, it lists every tracker added to Gladys: name, zone,
+  battery (green, orange or red badge). A tap on a tracker shows the details
+  (status, time of the last position, accuracy) and the OpenStreetMap link.
+- **With one tracker chosen**, it shows its live battery, its zone, its status,
+  and buttons: **Map**, **Ring**, **Vibrate** and **Super live** (which asks
+  for a confirmation).
+
+## Scene triggers
+
+- **Weenect tracker enters a zone**
+- **Weenect tracker leaves a zone**
+
+Both filter on the tracker and on the zone name (empty: any zone). Write the
+zone name **exactly** as in the Weenect app. The scene actions can use the
+tracker name, the zone, the battery and the map link (empty in the "Zones
+only" mode).
+
+Why triggers on top of the "Zone: …" features? One scene is enough for "any
+tracker leaves any zone", and the message can say which one, where. For "is the
+cat at home?" as a condition, use the **Zone: Home** or **In a zone** feature
+instead.
+
+No "low battery" trigger: the **Low battery** feature is enough (trigger "a
+device value changes").
+
+## Scene action
+
+**Start Weenect super live**: the tracker sends a position every few seconds
+for about 5 minutes. Meanwhile, Gladys reads the account every 10 seconds.
+Super live **drains the battery fast**: the integration never starts it on its
+own, only from a scene or the widget.
+
+## Scene examples
+
+- **The cat left the garden**: trigger "Weenect tracker leaves a zone", tracker
+  "Minou", zone "Garden" → send a message "Minou left the garden", completed
+  with the "Battery (%)" and "Map link" variables.
+- **The children are back from school**: trigger "Weenect tracker enters a
+  zone", zone "Home", on a weekday between 4 and 6 pm → message with the
+  "Tracker name" variable: "… is home".
+- **The dog ran away at night**: trigger "Weenect tracker leaves a zone", zone
+  "Home", condition "it is night" → start Weenect super live on that tracker,
+  then send the map link.
+- **Time to charge**: the collar's "Low battery" turns to Yes → evening message.
+
+## Privacy
+
+The position of a child or a relative is sensitive data.
+
+- In the **Zones only** mode, the coordinates are read from Weenect to compute
+  the zones **inside the integration container**, and never leave it: no
+  position feature (it shows "Hidden"), no map link in the widget nor in the
+  scenes. Switching to "Zones only" replaces at once the last position Gladys
+  kept.
+- In every mode, **no coordinate, no e-mail, no password and no token** is
+  written to the logs, even with `LOG_LEVEL=debug`.
+- The Position feature is a text: Gladys keeps no history of it, only the last
+  value.
+- The Weenect session token is kept in the integration's `/data` volume (no new
+  login at each start), with a fingerprint of the e-mail, never the e-mail nor
+  the password.
+
+## Refresh and API limits
+
+- One read = **one call** to the Weenect cloud for the whole account, plus one
+  call per tracker every 30 minutes to read the zones again.
+- Gladys only reads the account when at least one tracker is added.
+- Weenect publishes no terms of use nor quota for its API. To stay on the safe
+  side: 30 seconds at the fastest (the Home Assistant integration also reads
+  every 30 seconds), 10 seconds only during a super live started from Gladys.
+  When Weenect answers "too many requests", the reads pause for the time it
+  asks (5 minutes by default).
+- A refused password stops the attempts until the configuration changes again:
+  a loop of refused logins could lock the account.
+- The tracker itself sends positions at the pace set in the Weenect app:
+  reading more often does not make the position fresher.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"Weenect refused the e-mail or password"**: check them in the Weenect app,
+  fix the configuration and save; **Test the connection** tries again at once.
+- **"Weenect cannot be reached"**: Gladys tries again at each refresh; check
+  the Internet access of the Gladys machine.
+- **No tracker in the Discover tab**: click **Test the connection**; Weenect
+  may not return a tracker without an active subscription.
+- **A zone is missing**: create it in the Weenect app, then open the
+  **Discover** tab and click **Update**.
+- **The trigger does not fire**: the zone name of the filter must be written
+  exactly as in the app. Leaving a zone is only detected once the position is
+  far enough from its border (its accuracy, 25 to 100 m).
+- **More details**: set `LOG_LEVEL=debug` in the container variables; the logs
+  show each read, without position nor secret.
+
+## Limits
+
+- The map of Gladys 5.2 only shows the Gladys users, houses and zones, not the
+  devices: the position is published as text, and the map opens through an
+  OpenStreetMap link.
+- The zone is computed by Gladys from the last position and the zones of the
+  Weenect app (centre and radius): it may differ by a few metres from the
+  alerts of the Weenect app.
+- Gladys only knows about super live when it was started from Gladys; its
+  length (about 5 minutes) is an estimate.
+- No setting of the tracking mode, the zones, the SOS contacts nor the SOS
+  button from Gladys: they stay in the Weenect app.
+- The Weenect API is not public: it may change without notice.
+- Developed without the hardware: models only tested against the API answers
+  published by the `aioweenect` library.

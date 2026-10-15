@@ -16,12 +16,13 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/service.test.js          # one file
+node --test --test-name-pattern "zone"    # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
 npx github:GladysAssistant/integration-store .   # store admission checks
+node scripts/probe.mjs                    # real Weenect API, fake account (needs network)
 ```
 
 The CI (`.github/workflows/ci.yml`) runs `format:check`, `lint` and `test` on
@@ -31,16 +32,23 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+index.js                          SDK wiring only (src/app.js registers the handlers)
+src/app.js                        handlers → service; manifest action, scene actions, widget
+src/service.js                    reads the account, states, zone triggers, commands, refresh timer
+src/weenect.js                    Weenect API client (login, JWT, trackers, zones, commands)
+src/session.js                    session token under /data (hash of the e-mail, never the e-mail)
+src/tracker.js                    one tracker = one device: features, names, states
+src/geo.js                        distances, zone membership (with exit margin), map link
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget (manifest `widgets`)
+src/i18n.js                       every text of the container, en/fr/de/es
+src/issues.js                     repeated failures logged once, recovery logged once
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+scripts/probe.mjs                 read-only probe of the real API (a machine with network)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en, fr mandatory)
+test/                             node --test, SDK's fake Gladys + simulated Weenect cloud
+test/fixtures/weenect/            aioweenect fixtures (MIT), anonymized
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +78,10 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in four languages (English, French, German with
+  "du", Spanish with "usted"): action messages, widget texts, feature names,
+  manifest texts, and `docs/{en,fr,de,es}.md` with the same sections.
+  `test/i18n.test.js` checks it.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +243,46 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Weenect (propre à cette intégration)
+
+**API** (non publique, celle de l'appli web my.weenect.com, reprise de `aioweenect`, MIT) :
+`https://apiv4.weenect.com/v4/`, en-têtes `Origin: https://my.weenect.com` et `x-app-*` comme
+l'appli. `POST user/login {username, password}` → `{ access_token, expires_in: 86400,
+refresh_token }` ; chaque appel porte `Authorization: JWT <token>`, un 401 (`"Invalid token"`)
+veut dire jeton expiré : se reconnecter une fois. `GET mytracker` rend **tous** les traceurs avec
+leur dernière position (`position[0]` : `latitude`, `longitude`, `radius` = précision en m,
+`battery`, `is_online`, `date_tracker`) ; `GET mytracker/<id>/zones` rend les zones (`latitude`,
+`longitude`, `distance` = rayon en m, `name`, `mode`, `active`). Commandes : `POST
+mytracker/<id>/ring | vibrate | position/refresh | st-mode` (super live). Le traceur porte un
+tableau `features` (`ringing`, `vibrate`, `super_tracking`…) : ne proposer que ce qu'il sait faire.
+
+**Pièges et choix**
+
+- **Le cœur 5.2.1 n'affiche pas la position d'un appareil sur sa carte** : la carte
+  (`front/src/routes/map`) ne montre que les utilisateurs, les maisons et les zones Gladys, et il
+  n'existe aucun type de fonctionnalité latitude/longitude. La position part en `text/text`
+  (pas d'historique côté Gladys) et la carte s'ouvre par un lien OpenStreetMap (widget, variable
+  de scène).
+- **L'API ne dit pas si un traceur est dans une zone** (`geofence_name` vaut `null` dans les
+  réponses publiées) : le conteneur le calcule, avec une marge de sortie (précision, 25 à 100 m)
+  contre le battement en bord de zone. En mode « Zones seulement », les coordonnées ne sortent
+  jamais du conteneur ; la fonctionnalité Position publie alors « Masquée », ce qui écrase la
+  dernière valeur gardée par Gladys.
+- **Un mot de passe refusé bloque les connexions jusqu'au prochain changement de config** (une
+  boucle de connexions refusées peut verrouiller un compte cloud) ; « Tester la connexion » est
+  le seul moyen de réessayer avant.
+- **Les messages d'erreur ne reprennent jamais le texte du serveur** : un refus de connexion peut
+  répéter l'e-mail. Seuls l'endpoint et le statut HTTP sont gardés.
+- **Super live** : action de scène et bouton de widget (avec confirmation) seulement, jamais une
+  fonctionnalité (un assistant vocal ou « tout allumer » le lancerait). Sa durée (5 min) est une
+  estimation ; Gladys ne connaît que ceux qu'elle a lancés.
+- **Un traceur sorti pendant un arrêt du conteneur** : l'appartenance précédente est relue dans
+  les `last_value` des fonctionnalités de zone (`gladys.devices`), pour que la sortie déclenche
+  quand même la scène.
+- Réseau de la session de code : `apiv4.weenect.com` est refusé par le proxy, et le `fetch` de
+  Node n'utilise pas le proxy (ENOTFOUND) : `scripts/probe.mjs` se lance ailleurs.
+- Tests : pour simuler un `/data` non inscriptible, viser un chemin **sous un fichier ordinaire**
+  (ENOTDIR). Un `mkdir` sous `/proc` bloque indéfiniment dans le bac à sable des sessions.
+- Garde-fou du tutoiement allemand : « …: Sie kann … » (« elle », majuscule après deux-points) est
+  pris pour un vouvoiement. Reformuler la phrase plutôt que d'assouplir le test.
