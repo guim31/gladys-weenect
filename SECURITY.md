@@ -28,8 +28,21 @@ Gladys before reporting a problem.
 
 ## Scope
 
-In scope: the code of this repository and the Docker image it publishes.
+In scope: the code of this repository and the Docker image it publishes, in
+particular:
+
+- the **Weenect credentials**: the e-mail and password are stored by Gladys in
+  the integration configuration and only sent to `apiv4.weenect.com` over
+  HTTPS, to log in;
+- the **session token** the Weenect API returns, kept in
+  `/data/weenect-session.json` (mode 0600) next to a hash of the e-mail — never
+  the e-mail nor the password;
+- the **positions** of the trackers: never written to the logs, and never
+  published to Gladys in the "Zones only" mode;
+- the network: the container only talks to `apiv4.weenect.com` (HTTPS) and to
+  Gladys; the map links point to `www.openstreetmap.org` and are only opened by
+  the user's browser.
 
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+the Weenect cloud, apps and trackers (report those to Weenect).

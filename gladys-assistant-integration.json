@@ -1,177 +1,424 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Weenect",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Weenect GPS trackers for cats, dogs, children and seniors: zones, battery, ring.",
+    "fr": "Traceurs GPS Weenect pour chats, chiens, enfants et seniors : zones, batterie, sonnerie.",
+    "de": "Weenect-GPS-Tracker für Katzen, Hunde, Kinder und Senioren: Zonen, Batterie, Klingeln.",
+    "es": "Localizadores GPS Weenect para gatos, perros, niños y mayores: zonas, batería, timbre."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-weenect:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-weenect/main/cover.png",
+  "categories": ["security", "services"],
+  "transports": ["cloud"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
-      "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+      "label": {
+        "en": "Your Weenect account",
+        "fr": "Votre compte Weenect",
+        "de": "Dein Weenect-Konto",
+        "es": "Su cuenta Weenect"
       },
-      "links": [
+      "description": {
+        "en": "Use the e-mail and password of the Weenect app. Gladys reads your trackers from the Weenect cloud. Not affiliated with Weenect.",
+        "fr": "Utilisez l’e-mail et le mot de passe de l’appli Weenect. Gladys lit vos traceurs depuis le cloud Weenect. Intégration non affiliée à Weenect.",
+        "de": "Nutze die E-Mail und das Passwort der Weenect-App. Gladys liest deine Tracker aus der Weenect-Cloud. Nicht mit Weenect verbunden.",
+        "es": "Utilice el correo y la contraseña de la aplicación Weenect. Gladys lee sus localizadores desde la nube de Weenect. Sin afiliación con Weenect."
+      }
+    },
+    {
+      "key": "email",
+      "type": "string",
+      "label": {
+        "en": "Weenect e-mail",
+        "fr": "E-mail Weenect",
+        "de": "Weenect-E-Mail",
+        "es": "Correo de Weenect"
+      },
+      "placeholder": {
+        "en": "e.g. name@example.com",
+        "fr": "ex. nom@exemple.fr",
+        "de": "z. B. name@beispiel.de",
+        "es": "p. ej. nombre@ejemplo.es"
+      },
+      "required": true
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Weenect password",
+        "fr": "Mot de passe Weenect",
+        "de": "Weenect-Passwort",
+        "es": "Contraseña de Weenect"
+      },
+      "required": true
+    },
+    {
+      "key": "privacy",
+      "type": "select",
+      "label": {
+        "en": "What Gladys keeps of the position",
+        "fr": "Ce que Gladys garde de la position",
+        "de": "Was Gladys von der Position behält",
+        "es": "Lo que Gladys guarda de la posición"
+      },
+      "description": {
+        "en": "“Zones only”: Gladys knows whether a tracker is in a zone, never its coordinates (no map link).",
+        "fr": "« Zones seulement » : Gladys sait si un traceur est dans une zone, jamais ses coordonnées (pas de lien carte).",
+        "de": "„Nur Zonen“: Gladys weiß, ob ein Tracker in einer Zone ist, aber nie seine Koordinaten (kein Kartenlink).",
+        "es": "«Solo zonas»: Gladys sabe si un localizador está en una zona, nunca sus coordenadas (sin enlace al mapa)."
+      },
+      "required": false,
+      "default": "full",
+      "options": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "value": "full",
+          "label": {
+            "en": "Coordinates and zones",
+            "fr": "Coordonnées et zones",
+            "de": "Koordinaten und Zonen",
+            "es": "Coordenadas y zonas"
+          }
+        },
+        {
+          "value": "zones_only",
+          "label": {
+            "en": "Zones only",
+            "fr": "Zones seulement",
+            "de": "Nur Zonen",
+            "es": "Solo zonas"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "refresh_interval",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Fréquence de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Frecuencia de actualización"
+      },
+      "description": {
+        "en": "How often Gladys reads the Weenect account. The tracker itself sends positions at the pace set in the Weenect app.",
+        "fr": "Fréquence de lecture du compte Weenect. Le traceur envoie ses positions au rythme réglé dans l’appli Weenect.",
+        "de": "Wie oft Gladys das Weenect-Konto abfragt. Der Tracker sendet Positionen im Rhythmus, der in der Weenect-App eingestellt ist.",
+        "es": "Con qué frecuencia Gladys lee la cuenta Weenect. El localizador envía posiciones al ritmo ajustado en la aplicación Weenect."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "60",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": { "en": "1 minute", "fr": "1 minute", "de": "1 Minute", "es": "1 minuto" }
+        },
+        {
+          "value": "120",
+          "label": { "en": "2 minutes", "fr": "2 minutes", "de": "2 Minuten", "es": "2 minutos" }
+        },
+        {
+          "value": "300",
+          "label": { "en": "5 minutes", "fr": "5 minutes", "de": "5 Minuten", "es": "5 minutos" }
+        },
+        {
+          "value": "600",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the texts",
+        "fr": "Langue des textes",
+        "de": "Sprache der Texte",
+        "es": "Idioma de los textos"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Language of the feature names (set when a device is added) and of the texts the integration publishes.",
+        "fr": "Langue des noms de fonctionnalités (fixés à l’ajout d’un appareil) et des textes publiés par l’intégration.",
+        "de": "Sprache der Funktionsnamen (beim Hinzufügen eines Geräts festgelegt) und der Texte, die die Integration veröffentlicht.",
+        "es": "Idioma de los nombres de las funciones (fijados al añadir un dispositivo) y de los textos que publica la integración."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": { "en": "English", "fr": "Anglais", "de": "Englisch", "es": "Inglés" }
+        },
+        {
+          "value": "fr",
+          "label": { "en": "French", "fr": "Français", "de": "Französisch", "es": "Francés" }
+        },
+        {
+          "value": "de",
+          "label": { "en": "German", "fr": "Allemand", "de": "Deutsch", "es": "Alemán" }
+        },
+        {
+          "value": "es",
+          "label": { "en": "Spanish", "fr": "Espagnol", "de": "Spanisch", "es": "Español" }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "zone_entered",
+      "label": {
+        "en": "Weenect tracker enters a zone",
+        "fr": "Traceur Weenect entré dans une zone",
+        "de": "Weenect-Tracker betritt eine Zone",
+        "es": "Localizador Weenect entra en una zona"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A tracker came into a zone set up in the Weenect app (home, school…).",
+        "fr": "Un traceur est entré dans une zone définie dans l’appli Weenect (maison, école…).",
+        "de": "Ein Tracker ist in eine Zone gekommen, die in der Weenect-App angelegt ist (Zuhause, Schule …).",
+        "es": "Un localizador ha entrado en una zona definida en la aplicación Weenect (casa, colegio…)."
       },
       "fields": [
         {
-          "key": "device",
+          "key": "tracker",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": { "en": "Tracker", "fr": "Traceur", "de": "Tracker", "es": "Localizador" }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "key": "zone",
+          "type": "string",
+          "label": {
+            "en": "Zone (empty: any zone)",
+            "fr": "Zone (vide : toutes)",
+            "de": "Zone (leer: jede Zone)",
+            "es": "Zona (vacío: cualquiera)"
+          },
+          "description": {
+            "en": "The name of the zone, exactly as written in the Weenect app.",
+            "fr": "Le nom de la zone, écrit exactement comme dans l’appli Weenect.",
+            "de": "Der Name der Zone, genau wie in der Weenect-App geschrieben.",
+            "es": "El nombre de la zona, escrito exactamente como en la aplicación Weenect."
+          },
+          "placeholder": {
+            "en": "e.g. Home",
+            "fr": "ex. Maison",
+            "de": "z. B. Zuhause",
+            "es": "p. ej. Casa"
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "tracker_name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Tracker name",
+            "fr": "Nom du traceur",
+            "de": "Name des Trackers",
+            "es": "Nombre del localizador"
+          }
+        },
+        {
+          "key": "zone",
+          "type": "string",
+          "label": { "en": "Zone", "fr": "Zone", "de": "Zone", "es": "Zona" }
+        },
+        {
+          "key": "battery",
+          "type": "number",
+          "label": {
+            "en": "Battery (%)",
+            "fr": "Batterie (%)",
+            "de": "Batterie (%)",
+            "es": "Batería (%)"
+          }
+        },
+        {
+          "key": "map_url",
+          "type": "string",
+          "label": {
+            "en": "Map link (empty in “Zones only”)",
+            "fr": "Lien carte (vide en « Zones seulement »)",
+            "de": "Kartenlink (leer bei „Nur Zonen“)",
+            "es": "Enlace al mapa (vacío en «Solo zonas»)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "zone_exited",
+      "label": {
+        "en": "Weenect tracker leaves a zone",
+        "fr": "Traceur Weenect sorti d’une zone",
+        "de": "Weenect-Tracker verlässt eine Zone",
+        "es": "Localizador Weenect sale de una zona"
+      },
+      "description": {
+        "en": "A tracker left a zone set up in the Weenect app: the cat is out of the garden.",
+        "fr": "Un traceur est sorti d’une zone définie dans l’appli Weenect : le chat a quitté le jardin.",
+        "de": "Ein Tracker hat eine Zone aus der Weenect-App verlassen: Die Katze ist aus dem Garten.",
+        "es": "Un localizador ha salido de una zona definida en la aplicación Weenect: el gato ha salido del jardín."
+      },
+      "fields": [
+        {
+          "key": "tracker",
+          "type": "select",
+          "source": "devices",
+          "label": { "en": "Tracker", "fr": "Traceur", "de": "Tracker", "es": "Localizador" }
+        },
+        {
+          "key": "zone",
+          "type": "string",
+          "label": {
+            "en": "Zone (empty: any zone)",
+            "fr": "Zone (vide : toutes)",
+            "de": "Zone (leer: jede Zone)",
+            "es": "Zona (vacío: cualquiera)"
+          },
+          "description": {
+            "en": "The name of the zone, exactly as written in the Weenect app.",
+            "fr": "Le nom de la zone, écrit exactement comme dans l’appli Weenect.",
+            "de": "Der Name der Zone, genau wie in der Weenect-App geschrieben.",
+            "es": "El nombre de la zona, escrito exactamente como en la aplicación Weenect."
+          },
+          "placeholder": {
+            "en": "e.g. Home",
+            "fr": "ex. Maison",
+            "de": "z. B. Zuhause",
+            "es": "p. ej. Casa"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "tracker_name",
+          "type": "string",
+          "label": {
+            "en": "Tracker name",
+            "fr": "Nom du traceur",
+            "de": "Name des Trackers",
+            "es": "Nombre del localizador"
+          }
+        },
+        {
+          "key": "zone",
+          "type": "string",
+          "label": { "en": "Zone", "fr": "Zone", "de": "Zone", "es": "Zona" }
+        },
+        {
+          "key": "battery",
+          "type": "number",
+          "label": {
+            "en": "Battery (%)",
+            "fr": "Batterie (%)",
+            "de": "Batterie (%)",
+            "es": "Batería (%)"
+          }
+        },
+        {
+          "key": "map_url",
+          "type": "string",
+          "label": {
+            "en": "Map link (empty in “Zones only”)",
+            "fr": "Lien carte (vide en « Zones seulement »)",
+            "de": "Kartenlink (leer bei „Nur Zonen“)",
+            "es": "Enlace al mapa (vacío en «Solo zonas»)"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "activate_super_live",
+      "label": {
+        "en": "Start Weenect super live",
+        "fr": "Lancer le super live Weenect",
+        "de": "Weenect-Super-Live starten",
+        "es": "Iniciar el super live de Weenect"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "A position every few seconds for about 5 minutes. Drains the battery fast: use it on purpose.",
+        "fr": "Une position toutes les quelques secondes pendant 5 minutes environ. Vide vite la batterie : à utiliser à bon escient.",
+        "de": "Alle paar Sekunden eine Position, etwa 5 Minuten lang. Leert den Akku schnell: nur gezielt nutzen.",
+        "es": "Una posición cada pocos segundos durante unos 5 minutos. Agota rápido la batería: úselo con criterio."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
-          "key": "device",
+          "key": "tracker",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": { "en": "Tracker", "fr": "Traceur", "de": "Tracker", "es": "Localizador" },
           "required": true
-        }
-      ],
-      "outputs": [
-        {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "trackers",
+      "label": {
+        "en": "Weenect trackers",
+        "fr": "Traceurs Weenect",
+        "de": "Weenect-Tracker",
+        "es": "Localizadores Weenect"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Zone, battery and last position of your trackers, with a map link.",
+        "fr": "Zone, batterie et dernière position de vos traceurs, avec un lien carte.",
+        "de": "Zone, Batterie und letzte Position deiner Tracker, mit Kartenlink.",
+        "es": "Zona, batería y última posición de sus localizadores, con enlace al mapa."
+      },
+      "icon": "map-pin",
+      "settings": [
+        {
+          "key": "tracker",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Tracker (empty: all, as a list)",
+            "fr": "Traceur (vide : tous, en liste)",
+            "de": "Tracker (leer: alle, als Liste)",
+            "es": "Localizador (vacío: todos, en lista)"
+          }
+        }
+      ],
+      "action_timeout_seconds": 30
     }
   ]
 }

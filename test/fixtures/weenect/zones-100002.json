@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": 200003,
+      "number": 200003,
+      "name": "Maison",
+      "address": "Adresse d’exemple",
+      "active": true,
+      "tracker_id": 100002,
+      "latitude": 45.0,
+      "longitude": 4.0,
+      "mode": 3,
+      "distance": 150,
+      "is_outside": false
+    }
+  ],
+  "total": 1
+}

@@ -1,67 +1,208 @@
-# Template de démonstration
+# Weenect
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Suivez vos traceurs GPS **Weenect** (chat, chien, enfant, senior) dans
+Gladys : la zone où ils se trouvent (maison, jardin, école…), la batterie,
+la dernière position, et faites-les sonner ou vibrer depuis un tableau de
+bord ou une scène.
 
-## Ce que vous obtenez
+> **Développée sans le matériel** : cette intégration a été écrite à partir
+> de l'API utilisée par l'application Weenect et de l'intégration Home
+> Assistant équivalente, sans traceur ni compte Weenect sous la main. Vos
+> retours sont les bienvenus sur le forum Gladys ou dans les issues GitHub.
+>
+> Intégration communautaire, **non affiliée à Weenect**.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Présentation
+
+Chaque traceur de votre compte Weenect devient un appareil Gladys. L'intégration
+lit le cloud Weenect à intervalle régulier (toutes les minutes par défaut) et
+publie :
+
+- **dans quelle zone** se trouve le traceur, d'après les zones que vous avez
+  dessinées dans l'appli Weenect (« Maison », « Jardin », « École »…) ;
+- son **niveau de batterie**, et une alerte **batterie faible** au seuil réglé
+  dans l'appli Weenect ;
+- s'il est **en ligne** ou **hors ligne** ;
+- sa **dernière position** (coordonnées, précision, heure), sauf si vous
+  choisissez de ne garder que les zones.
+
+Elle ajoute aussi deux déclencheurs de scène (**entrée** et **sortie de zone**),
+une action de scène pour lancer le **super live**, et un widget de tableau de
+bord.
+
+## Prérequis
+
+- Gladys **5.1.0** ou plus récent.
+- Un traceur Weenect avec un **abonnement actif**, et le compte utilisé dans
+  l'appli Weenect (e-mail et mot de passe). Un compte créé via Google ou Apple
+  n'a pas forcément de mot de passe : définissez-en un depuis l'appli ou le site
+  Weenect (« mot de passe oublié »).
+- Les **zones** que vous voulez suivre, créées dans l'appli Weenect.
+- Gladys doit pouvoir joindre Internet (`apiv4.weenect.com`).
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+1. Installez l'intégration depuis **Intégrations → Installer depuis GitHub**
+   (ou depuis le catalogue quand elle y figure).
+2. Dans l'onglet **Configuration**, renseignez l'**e-mail** et le **mot de
+   passe** de votre compte Weenect.
+3. Choisissez **ce que Gladys garde de la position** :
+   - **Coordonnées et zones** (par défaut) : la position, sa précision et un
+     lien vers la carte ;
+   - **Zones seulement** : Gladys sait si le traceur est dans une zone, jamais
+     où il se trouve (voir « Vie privée »).
+4. Choisissez la **fréquence de rafraîchissement** (30 secondes à 10 minutes,
+   1 minute par défaut) et la **langue des textes** (français par défaut).
+5. Enregistrez, puis cliquez sur **Tester la connexion** : le bouton affiche
+   le nombre de traceurs trouvés.
+6. Ouvrez l'onglet **Découverte** et ajoutez vos traceurs à Gladys. Les
+   valeurs arrivent aussitôt.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+Les noms des fonctionnalités sont fixés au moment de l'ajout, dans la langue
+choisie à ce moment-là.
 
-## Actions
+## Appareils
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+Un appareil par traceur, avec ces fonctionnalités :
 
-## Scènes
+| Fonctionnalité               | Ce qu'elle indique                                                            |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| Position                     | « 45.76400, 4.83570 », ou « Masquée » en mode « Zones seulement »             |
+| Précision de la position     | Rayon d'incertitude de la dernière position, en mètres                        |
+| Dernière position            | Date et heure de la dernière position envoyée par le traceur                  |
+| Batterie                     | Niveau de batterie, en %                                                      |
+| Batterie faible              | Oui quand la batterie passe sous le seuil d'alerte réglé dans l'appli Weenect |
+| En ligne                     | Oui quand le traceur communique avec Weenect                                  |
+| État                         | En ligne, hors ligne, ou super live (lancé depuis Gladys)                     |
+| Dans une zone                | Oui quand le traceur est dans au moins une de ses zones                       |
+| Zone actuelle                | Nom de la zone (la plus petite s'il y en a plusieurs), ou « Hors zone »       |
+| Zone : Maison (une par zone) | Oui quand le traceur est dans cette zone                                      |
+| Faire sonner                 | Bouton : le traceur sonne (si le modèle le permet)                            |
+| Faire vibrer                 | Bouton : le traceur vibre (si le modèle le permet)                            |
+| Demander une position        | Bouton : le traceur envoie une nouvelle position dès qu'il le peut            |
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+Une zone ajoutée plus tard dans l'appli Weenect apparaît dans l'onglet
+**Découverte** avec un bouton **Mettre à jour** : un clic l'ajoute à
+l'appareil. Une zone renommée garde sa fonctionnalité (Gladys la reconnaît à
+son identifiant, pas à son nom).
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+## Widget
 
-## Tableau de bord
+Le widget **Traceurs Weenect** s'ajoute depuis l'édition du tableau de bord.
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+- **Sans réglage**, il liste tous les traceurs ajoutés à Gladys : nom, zone,
+  batterie (pastille verte, orange ou rouge). Un appui sur un traceur affiche
+  le détail (état, heure de la dernière position, précision) et le lien vers
+  la carte OpenStreetMap.
+- **Avec un traceur choisi**, il affiche sa batterie en direct, sa zone, son
+  état, et des boutons : **Carte**, **Sonner**, **Vibrer** et **Super live**
+  (qui demande une confirmation).
+
+## Déclencheurs de scène
+
+- **Traceur Weenect entré dans une zone**
+- **Traceur Weenect sorti d'une zone**
+
+Les deux se filtrent par traceur et par nom de zone (laisser vide : toutes les
+zones). Le nom de zone s'écrit **exactement** comme dans l'appli Weenect.
+Les actions de la scène peuvent utiliser le nom du traceur, la zone, la
+batterie et le lien vers la carte (vide en mode « Zones seulement »).
+
+Pourquoi des déclencheurs en plus des fonctionnalités « Zone : … » ? Une seule
+scène suffit pour « n'importe quel traceur sort de n'importe quelle zone », et
+le message peut dire lequel, où. Pour « le chat est-il à la maison ? » en
+condition, utilisez plutôt la fonctionnalité **Zone : Maison** ou **Dans une
+zone**.
+
+Pas de déclencheur « batterie faible » : la fonctionnalité **Batterie faible**
+suffit (déclencheur « la valeur d'un appareil change »).
+
+## Action de scène
+
+**Lancer le super live Weenect** : le traceur envoie une position toutes les
+quelques secondes pendant environ 5 minutes. Pendant ce temps, Gladys lit le
+compte toutes les 10 secondes. Le super live **vide vite la batterie** :
+l'intégration ne le lance jamais d'elle-même, seulement depuis une scène ou le
+widget.
+
+## Exemples de scènes
+
+- **Le chat est sorti du jardin** : déclencheur « Traceur Weenect sorti d'une
+  zone », traceur « Minou », zone « Jardin » → envoyer un message « Minou a
+  quitté le jardin », complété par les variables « Batterie (%) » et « Lien
+  carte ».
+- **Les enfants sont rentrés de l'école** : déclencheur « Traceur Weenect
+  entré dans une zone », zone « Maison », un jour de semaine entre 16 h et
+  18 h → message avec la variable « Nom du traceur » : « … est rentré ».
+- **Le chien a fugué la nuit** : déclencheur « Traceur Weenect sorti d'une
+  zone », zone « Maison », condition « il fait nuit » → lancer le super live
+  Weenect sur ce traceur, puis envoyer le lien de la carte.
+- **Penser à recharger** : « Batterie faible » du collier passe à Oui → message
+  le soir.
+
+## Vie privée
+
+La position d'un enfant ou d'un proche est une donnée sensible.
+
+- En mode **Zones seulement**, les coordonnées sont lues chez Weenect pour
+  calculer les zones **dans le conteneur de l'intégration**, et n'en sortent
+  jamais : pas de fonctionnalité position (elle affiche « Masquée »), pas de
+  lien carte dans le widget ni dans les scènes. Passer en « Zones seulement »
+  remplace aussitôt la dernière position que Gladys avait gardée.
+- Dans tous les modes, **aucune coordonnée, aucun e-mail, aucun mot de passe
+  ni jeton** n'est écrit dans les journaux, même en `LOG_LEVEL=debug`.
+- La fonctionnalité Position est un texte : Gladys n'en garde pas
+  d'historique, seulement la dernière valeur.
+- Le jeton de session Weenect est gardé dans le volume `/data` de
+  l'intégration (pour ne pas se reconnecter à chaque démarrage), avec une
+  empreinte de l'e-mail, jamais l'e-mail ni le mot de passe.
+
+## Rafraîchissement et limites de l'API
+
+- Une lecture = **un appel** au cloud Weenect pour tout le compte, plus un appel
+  par traceur toutes les 30 minutes pour relire les zones.
+- Gladys ne lit le compte que si au moins un traceur est ajouté.
+- Weenect ne publie ni conditions d'utilisation de son API ni quota. Par
+  prudence : 30 secondes au plus vite (l'intégration Home Assistant lit aussi
+  toutes les 30 secondes), 10 secondes seulement pendant un super live lancé
+  depuis Gladys. Si Weenect répond « trop de requêtes », les lectures sont
+  suspendues le temps demandé (5 minutes par défaut).
+- Un mot de passe refusé arrête les tentatives jusqu'à la prochaine
+  modification de la configuration : une boucle de connexions refusées pourrait
+  bloquer le compte.
+- Le traceur lui-même envoie ses positions au rythme réglé dans l'appli
+  Weenect : lire Gladys plus souvent ne rend pas la position plus fraîche.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Weenect refuse l'e-mail ou le mot de passe »** : vérifiez-les dans
+  l'appli Weenect, corrigez la configuration et enregistrez ; **Tester la
+  connexion** réessaie aussitôt.
+- **« Weenect est injoignable »** : Gladys réessaie à chaque rafraîchissement ;
+  vérifiez l'accès à Internet de la machine Gladys.
+- **Aucun traceur dans l'onglet Découverte** : cliquez sur **Tester la
+  connexion** ; un traceur sans abonnement actif peut ne pas être renvoyé par
+  Weenect.
+- **Une zone manque** : créez-la dans l'appli Weenect, puis ouvrez l'onglet
+  **Découverte** et cliquez sur **Mettre à jour**.
+- **Le déclencheur ne se lance pas** : le nom de zone du filtre doit être écrit
+  exactement comme dans l'appli. Une sortie n'est détectée qu'une fois la
+  position assez loin du bord de la zone (sa précision, de 25 à 100 m).
+- **Plus de détails** : passez `LOG_LEVEL=debug` dans les variables du
+  conteneur ; les journaux montrent chaque lecture, sans position ni secret.
+
+## Limites
+
+- La carte de Gladys 5.2 n'affiche que les utilisateurs, les maisons et les
+  zones de Gladys, pas les appareils : la position est publiée en texte, et la
+  carte s'ouvre par un lien OpenStreetMap.
+- La zone est calculée par Gladys à partir de la dernière position et des zones
+  de l'appli Weenect (centre et rayon) : elle peut différer de quelques mètres
+  des alertes de l'appli Weenect.
+- Le super live n'est connu de Gladys que s'il est lancé depuis Gladys ; sa
+  durée (5 minutes environ) est une estimation.
+- Pas de réglage du mode de suivi, des zones, des contacts SOS ni du bouton SOS
+  depuis Gladys : ils restent dans l'appli Weenect.
+- L'API de Weenect n'est pas publique : elle peut changer sans préavis.
+- Développée sans le matériel : modèles testés uniquement à partir des réponses
+  d'API publiées par la bibliothèque `aioweenect`.

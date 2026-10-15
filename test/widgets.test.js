@@ -1,77 +1,134 @@
+// -----------------------------------------------------------------------------
+// The "Weenect trackers" widget: every content is rendered as sent (the SDK's
+// validateWidgetContent returns no problem: budget, vocabulary, bounds), its
+// device-bound tile points to a feature the device really has, and its
+// buttons reach the tracker.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { LANGUAGES } from '../src/config.js';
+import {
+  CAT,
+  CREDENTIALS,
+  DOG,
+  create,
+  createCloud,
+  createWorld,
+  discovered,
+} from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+const world = async (t, options) => {
+  const w = await createWorld(options);
+  t.after(() => w.app.stop());
+  return w;
+};
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+async function content(w, settings = {}, language = 'fr') {
+  const ack = await w.fake.widgetGet('trackers', { settings, language, units: 'metric' });
+  assert.equal(ack.success, true, ack.error);
+  return ack.data.content;
+}
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
-});
+const texts = (c) => JSON.stringify(c);
 
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
+test('every content fits the core vocabulary and budget, in every language', async (t) => {
+  const w = await world(t);
+  await create(w, CAT);
+  await create(w, DOG);
+  for (const language of LANGUAGES) {
+    for (const settings of [{}, { tracker: CAT }, { tracker: DOG }]) {
+      assert.deepEqual(
+        validateWidgetContent(await content(w, settings, language)),
+        [],
+        `${language} ${JSON.stringify(settings)}`,
+      );
+    }
   }
 });
 
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
+test('the list: one row per tracker added to Gladys, zone, battery, map link', async (t) => {
+  const w = await world(t);
+  await create(w, CAT);
+  await create(w, DOG);
+  const [list] = (await content(w)).components;
+  assert.equal(list.type, 'card-list');
+  const [minou, rex] = list.items;
+  assert.equal(minou.title, 'Minou');
+  assert.equal(minou.subtitle, 'Maison');
+  assert.deepEqual(minou.badge, { text: '82 %', color: 'success' });
+  assert.match(minou.links[0].url, /^https:\/\/www\.openstreetmap\.org\//);
+  assert.match(minou.description, /Dernière position : 15\/10 08:29/);
+  assert.equal(rex.subtitle, 'Hors zone · Hors ligne');
+  assert.equal(rex.badge.color, 'danger', 'low battery');
+});
+
+test('one tracker: its live battery tile is a feature of its device', async (t) => {
+  const w = await world(t);
+  await create(w, CAT);
+  const c = await content(w, { tracker: CAT }, 'en');
+  const featureIds = new Set(discovered(w, CAT).features.map((f) => f.external_id));
+  const tiles = c.components.filter((component) => component.device_feature);
+  assert.ok(tiles.length > 0);
+  for (const tile of tiles) {
+    assert.ok(featureIds.has(tile.device_feature), tile.device_feature);
+  }
+  const buttons = c.components.filter((component) => component.type === 'button');
+  assert.deepEqual(
+    buttons.map((b) => b.label),
+    ['Map', 'Ring', 'Vibrate', 'Super live'],
   );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
-  }
+  assert.equal(buttons[3].action.confirm, true, 'super live asks first');
+  // A button opening a form needs Gladys 5.2.0 (#3168): the manifest asks 5.1.0.
+  assert.ok(buttons.every((b) => b.action?.fields === undefined));
+  // Rex cannot ring: no ring button.
+  const rex = await content(w, { tracker: DOG }, 'en');
+  assert.ok(!rex.components.some((b) => b.action?.key === 'ring'));
 });
 
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
-    });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
-  }
-});
-
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
+test('the buttons ring, vibrate and start super live, with a toast', async (t) => {
+  const w = await world(t);
+  await create(w, CAT);
+  const ring = await w.fake.widgetAction(
+    'trackers',
+    'ring',
+    { tracker: '100001' },
+    { settings: { tracker: CAT } },
   );
+  assert.equal(ring.data.message.fr, 'Minou sonne.');
+  await w.fake.widgetAction('trackers', 'vibrate', { tracker: '100001' }, { settings: {} });
+  const live = await w.fake.widgetAction(
+    'trackers',
+    'super_live',
+    { tracker: '100001' },
+    { settings: {} },
+  );
+  assert.match(live.data.message.de, /Super-Live auf Minou/);
+  assert.deepEqual(
+    w.cloud.commands.map((c) => c.command),
+    ['ring', 'vibrate', 'st-mode'],
+  );
+  const shown = await content(w, { tracker: CAT });
+  assert.match(texts(shown), /check-circle/, 'super live running: shown by the icon');
+  assert.equal(shown.ttl_seconds, 10);
 });
 
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+test('the empty states say what to do', async (t) => {
+  const notConfigured = await world(t, { config: {} });
+  assert.match(texts(await content(notConfigured)), /e-mail et le mot de passe/);
+
+  const none = await world(t);
+  assert.match(texts(await content(none, {}, 'en')), /Add your trackers to Gladys first/);
+
+  const cloud = createCloud();
+  cloud.password = 'nope';
+  const refused = await world(t, { cloud, config: CREDENTIALS });
+  assert.match(texts(await content(refused, {}, 'es')), /Weenect rechaza/);
+
+  const gone = await world(t);
+  assert.match(
+    texts(await content(gone, { tracker: 'ext:test-integration:tracker:1' })),
+    /plus sur le compte/,
+  );
 });
