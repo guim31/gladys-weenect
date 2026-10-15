@@ -8,8 +8,8 @@
     "de": "Weenect-GPS-Tracker für Katzen, Hunde, Kinder und Senioren: Zonen, Batterie, Klingeln.",
     "es": "Localizadores GPS Weenect para gatos, perros, niños y mayores: zonas, batería, timbre."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/guim31/gladys-weenect:1.0.0",
+  "version": "1.0.1",
+  "docker_image": "ghcr.io/guim31/gladys-weenect:1.0.1",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/guim31/gladys-weenect/main/cover.png",
   "categories": ["security", "services"],

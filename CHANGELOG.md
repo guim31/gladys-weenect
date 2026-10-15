@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-15
+
 ### Added
 
 - Weenect GPS trackers in Gladys, from the e-mail and password of the Weenect
@@ -29,3 +31,6 @@ the notes of the version's GitHub Release.
 - "Zones only" privacy mode: the coordinates never leave the container.
 - "Test the connection" button in the configuration.
 - English, French, German and Spanish, documentation included.
+
+[Unreleased]: https://github.com/guim31/gladys-weenect/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-weenect/releases/tag/v1.0.1
