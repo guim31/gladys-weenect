@@ -72,7 +72,8 @@ for (const config of [CREDENTIALS, ZONES_ONLY]) {
     w.cloud.validTokens.clear();
     await w.fake.action('test_connection', {});
     assert.ok(lines.length > 10, 'debug shows the cycles');
-    const all = lines.map((line) => line.text).join('\n');
+    // The timestamp's digits ("…T06:21:45.032Z") can look like a coordinate: strip it.
+    const all = lines.map((line) => line.text.replace(/^\[[^\]]+\] /, '')).join('\n');
     assert.doesNotMatch(all, COORDINATE);
     for (const secret of [CREDENTIALS.email, CREDENTIALS.password, 'eyJ0eXAi', 'JWT ']) {
       assert.ok(!all.includes(secret), `"${secret}" is not logged`);
